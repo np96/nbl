@@ -76,6 +76,6 @@ agent.on("getled", getLed);
 setLed(1);
 getLed(null);
 
-// Take a temperature reading as soon as the device starts up.
+// Take readings as soon as the device starts up.
 // This function schedules itself to run again in INTERVAL_SECONDS.
 getReadings();
