@@ -1,7 +1,8 @@
+#line 1 "nbl.agent.nut"
 // Sensors data key
-const READING_KEY = "YOUR_READING_KEY";
+const READING_KEY = "YOUR_KEY";
 // Led channel key
-const LED_KEY = "YOUR_LED_KEY";
+const LED_KEY ="YOUR_LED_KEY";
 API_URL <- "https://api.thethings.io/v2/things/" + READING_KEY;
 LED_URL <-
 "https://api.thethings.io/v2/things/" + LED_KEY;
@@ -54,6 +55,14 @@ function convertToThingIO(body) {
         });
     }
     return http.jsonencode(res);
+}
+
+function convertFromThingIO(body) {
+    local res = {}
+    foreach (kvp in body) {
+        res[kvp["key"]] <- kvp["value"];
+    }
+    return res;
 }
 
 

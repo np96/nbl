@@ -1,0 +1,10 @@
+
+{
+"apiKey":         "",           
+"modelId":        "Tr0rAzTK8ix6",        
+"devices": [
+"2340666938a609ee"
+],
+"deviceFile":     "nbl.device.nut",    
+"agentFile":      "nbl.agent.nut"
+}
