@@ -2,17 +2,17 @@
 // Sensors data key
 const READING_KEY = "YOUR_KEY";
 // Led channel key
-const LED_KEY ="YOUR_LED_KEY";
-API_URL <- "https://api.thethings.io/v2/things/" + READING_KEY;
-LED_URL <-
+const LED_KEY = "YOUR_LED_KEY";
+local API_URL = "https://api.thethings.io/v2/things/" + READING_KEY;
+local LED_URL =
 "https://api.thethings.io/v2/things/" + LED_KEY;
-LED_SUB_URL <-
+local LED_SUB_URL =
 "https://api.thethings.io/v2/things/" + LED_KEY + "?keepAlive=60000";
+
+const LOOP_TIME = 6000;
 
 THE_THINGS_HEADER <- {"Content-Type": "application/json"}
 
-
-local loopTimer = null;
 
 
 // Log the response
@@ -69,7 +69,7 @@ function convertFromThingIO(body) {
 // Post reading from the device to thething.io.
 function postReading(reading) {
     local body = convertToThingIO(reading);
-    server.log(body);
+    server.log("sending readings: " + body);
     local req = http.post(API_URL, THE_THINGS_HEADER, body);
     req.sendasync(processResponse);
 }
@@ -78,7 +78,7 @@ function postReading(reading) {
 function loopLed() {
     local req = http.get(LED_SUB_URL, THE_THINGS_HEADER);
     req.sendasync(processResponse, processLedResponse, NO_TIMEOUT);
-    loopTimer = imp.wakeup(6000, function () {
+    imp.wakeup(LOOP_TIME, function () {
         req.cancel();
         loopLed();
     });
