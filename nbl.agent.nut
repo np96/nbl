@@ -1,17 +1,9 @@
-#line 1 "nbl.agent.nut"
 // Sensors data key
 const READING_KEY = "YOUR_KEY";
 // Led channel key
-const LED_KEY = "YOUR_LED_KEY";
 local API_URL = "https://api.thethings.io/v2/things/" + READING_KEY;
-local LED_URL =
-"https://api.thethings.io/v2/things/" + LED_KEY;
-local LED_SUB_URL =
-"https://api.thethings.io/v2/things/" + LED_KEY + "?keepAlive=60000";
 
-const LOOP_TIME = 6000;
-
-THE_THINGS_HEADER <- {"Content-Type": "application/json"}
+local THE_THINGS_HEADER = {"Content-Type": "application/json"}
 
 
 
@@ -21,29 +13,20 @@ function processResponse(response) {
 }
 
 
-// Emitted each time LED channel sends us chunk reply.
-function processLedResponse(response) {
-    // Log raw response string
-    server.log("LED raw: " + response);
-    // Streaming response is raw string so we need to 
-    // convert it to Squrrel data structure first
-    response = http.jsondecode(response);
-    // Initial response chunk is success/failure message
-    // e.g. {"status":"success","message":"streaming"}
-    if ("status" in response) {
-        server.log("LED status: " + response.status);
-    }
-    // Thingio's response is array, but we observe single
-    // value which might only be changed by user via switch
-    // e.g. [{"key":"led","value":"0"}]
-    else if (typeof response == "array" 
-            && typeof response[0] == "table"
-            && response[0].rawin("value")) {
-        server.log("setting LED: " + response[0].value);
-        device.send("setled", response[0].value.tointeger());
+// Handles led setting request
+function ledHandler(request, response) {
+    server.log("Handling request");
+    try {
+        if ("setled" in request.query) {
+            device.send("setled", request.query["setled"].tointeger());
+        }
+        response.send(200, "OK");
+    } catch (ex) {
+        response.send(500, "Internal error: " + ex);
     }
 }
 
+http.onrequest(ledHandler);
 
 
 // Converts squirrel table to thething.io json message format.
@@ -65,7 +48,6 @@ function convertFromThingIO(body) {
     return res;
 }
 
-
 // Post reading from the device to thething.io.
 function postReading(reading) {
     local body = convertToThingIO(reading);
@@ -74,29 +56,12 @@ function postReading(reading) {
     req.sendasync(processResponse);
 }
 
-// Led loop: subscribes to LED updates channel each 100 minutes.
-function loopLed() {
-    local req = http.get(LED_SUB_URL, THE_THINGS_HEADER);
-    req.sendasync(processResponse, processLedResponse, NO_TIMEOUT);
-    imp.wakeup(LOOP_TIME, function () {
-        req.cancel();
-        loopLed();
-    });
-    
-}
-
-function subscribeLed(data) {
-    processResponse(data);
-    loopLed();
-}
 
 // Sends initial LED state to thething.io and subscribes to the channel.
-function sendLedAndSubscribe(number) {
-    local req = http.post(LED_URL, THE_THINGS_HEADER, convertToThingIO({"led": number}));
-    
-    // Subscribe when the initial LED state is sent to the server.
-    req.sendasync(subscribeLed);
+function sendLed(number) {
+    local req = http.post(API_URL, THE_THINGS_HEADER, convertToThingIO({"led": number}));
+    req.sendasync(processResponse);
 }
 
-device.on("led", sendLedAndSubscribe);
 device.on("reading", postReading);
+device.on("led", sendLed);

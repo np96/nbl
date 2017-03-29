@@ -1,11 +1,10 @@
-
 #require "Si702x.class.nut:1.0.0"
 #require "LPS25H.class.nut:2.0.1"
+
 // How long to wait between taking readings
 const INTERVAL_SECONDS = 60;
-
 // Table for collected data
-data <- {
+local data = {
     "temperature": null,
     "pressure": null,
     "humidity": null,
@@ -21,13 +20,8 @@ local led = hardware.pin2;
 led.configure(DIGITAL_OUT, 0);
 
 
-// Data structure for sensors. Each sensors array members 
-// matches needReadings array member. Each needReadings array member
-// is array of observed units. For example, for tempHumidSensor
-// we collect temperature and humidity. 
-local needReadings = [["temperature", "humidity"], ["pressure"]]; 
-local sensors = [tempHumidSensor, pressureSensor];
-
+// Data structure for sensors. Each sensors array member is
+// an object representing device and needed readings for it.
 local sensors = [
     {
         "device": tempHumidSensor,
@@ -38,13 +32,6 @@ local sensors = [
         "readings": ["pressure"]
     }
 ];
-// Assert that arrays match
-//assert(needReadings.len() == sensors.len());
-
-local led = hardware.pin2;
-led.configure(DIGITAL_OUT, 0);
-
-
 
 // Collect readings for observed devices and units.
 function getReadings() {
@@ -74,16 +61,11 @@ function setLed(data) {
     }
 }
 
-// Function passed to agent.on(...) must have 1 parameter
-function getLed(ignore) {
-    agent.send("led", led.read());
-}
 
 agent.on("setled", setLed);
-agent.on("getled", getLed);
 
 setLed(1);
-getLed(null);
+agent.send("led", led.read());
 
 // Take a temperature reading as soon as the device starts up.
 // This function schedules itself to run again in INTERVAL_SECONDS.
