@@ -5,8 +5,6 @@ local API_URL = "https://api.thethings.io/v2/things/" + READING_KEY;
 
 local THE_THINGS_HEADER = {"Content-Type": "application/json"}
 
-
-
 // Log the response
 function processResponse(response) {
      server.log("Code: " + response.statuscode + ". Message: " + response.body);
@@ -56,12 +54,4 @@ function postReading(reading) {
     req.sendasync(processResponse);
 }
 
-
-// Sends initial LED state to thething.io and subscribes to the channel.
-function sendLed(number) {
-    local req = http.post(API_URL, THE_THINGS_HEADER, convertToThingIO({"led": number}));
-    req.sendasync(processResponse);
-}
-
 device.on("reading", postReading);
-device.on("led", sendLed);

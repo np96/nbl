@@ -4,11 +4,6 @@
 // How long to wait between taking readings
 const INTERVAL_SECONDS = 60;
 // Table for collected data
-local data = {
-    "temperature": null,
-    "pressure": null,
-    "humidity": null,
-}
 
 hardware.i2c89.configure(CLOCK_SPEED_400_KHZ);
 local tempHumidSensor = Si702x(hardware.i2c89);
@@ -33,23 +28,34 @@ local sensors = [
     }
 ];
 
+// Function factory returning callback executed each time 
+// readings are taken. readingNames is the list of units
+// we are interested in.
+function sendReadingFactory(readingNames) {
+    return function (data) {
+        // Don't send anything if an error occured.
+        if ("err" in data) {
+            server.log("Error reading " + readingName + "\n" + reading.err);
+            return;
+        }
+        // Make temporary object holding needed data and send
+        // it to agent.
+        local readingsToSend = {};
+        foreach (readingName in readingNames) {
+            readingsToSend[readingName] <- data[readingName];
+        }
+        agent.send("reading", readingsToSend);
+    }
+}
+
 // Collect readings for observed devices and units.
 function getReadings() {
     // Iterate through the array of sensors, 
     // collect readings for each observed unit.
     foreach (sensor in sensors) {
         local readingNames = sensor["readings"];
-        local tempReading = sensor["device"].read();
-        if ("err" in tempReading) {
-            server.error("Error reading " + readingName + "\n" + reading.err);
-        } else {
-            foreach (readingName in readingNames) {
-                data[readingName] = tempReading[readingName];
-                server.log(format("Got %s %0.1f", readingName, data[readingName]));
-            }
-        }
+        sensor["device"].read(sendReadingFactory(readingNames));
     }
-    agent.send("reading", data);
     imp.wakeup(INTERVAL_SECONDS, getReadings);
 }
 
