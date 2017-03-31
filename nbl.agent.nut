@@ -10,7 +10,6 @@ function processResponse(response) {
      server.log("Code: " + response.statuscode + ". Message: " + response.body);
 }
 
-
 // Handles led setting request
 function ledHandler(request, response) {
     server.log("Handling request");
@@ -26,31 +25,11 @@ function ledHandler(request, response) {
 
 http.onrequest(ledHandler);
 
-
-// Converts squirrel table to thething.io json message format.
-function convertToThingIO(body) {
-    local res = {"values" : []};
-    foreach (key, value in body) {
-        res.values.append({"key": key,
-                           "value": value
-        });
-    }
-    return http.jsonencode(res);
-}
-
-function convertFromThingIO(body) {
-    local res = {}
-    foreach (kvp in body) {
-        res[kvp["key"]] <- kvp["value"];
-    }
-    return res;
-}
-
 // Post reading from the device to thething.io.
 function postReading(reading) {
-    local body = convertToThingIO(reading);
-    server.log("sending readings: " + body);
-    local req = http.post(API_URL, THE_THINGS_HEADER, body);
+    reading = http.jsonencode(reading);
+    server.log("sending readings: " + reading);
+    local req = http.post(API_URL, THE_THINGS_HEADER, reading);
     req.sendasync(processResponse);
 }
 

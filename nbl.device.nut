@@ -12,7 +12,7 @@ local pressureSensor = LPS25H(hardware.i2c89);
 pressureSensor.enable(true);
 
 local led = hardware.pin2;
-led.configure(DIGITAL_OUT, 0);
+led.configure(DIGITAL_OUT, 1);
 
 
 // Data structure for sensors. Each sensors array member is
@@ -35,14 +35,18 @@ function sendReadingFactory(readingNames) {
     return function (data) {
         // Don't send anything if an error occured.
         if ("err" in data) {
-            server.log("Error reading " + readingName + "\n" + reading.err);
+            server.log("Error reading " + "\n" + reading.err);
             return;
         }
         // Make temporary object holding needed data and send
         // it to agent.
-        local readingsToSend = {};
+        local readingsToSend = {"values": []}
         foreach (readingName in readingNames) {
-            readingsToSend[readingName] <- data[readingName];
+            readingsToSend.values.append(
+                {
+                    "key": readingName,
+                    "value": data[readingName]
+                });
         }
         agent.send("reading", readingsToSend);
     }
@@ -67,12 +71,15 @@ function setLed(data) {
     }
 }
 
+// Notify the dashboard that LED state has been changed.
+local ledValue = { 
+    "key"  : "led",
+    "value": 1 
+};
+
+agent.send("reading", {"values": [ledValue]});
 
 agent.on("setled", setLed);
-
-setLed(1);
-agent.send("led", led.read());
-
 // Take a temperature reading as soon as the device starts up.
 // This function schedules itself to run again in INTERVAL_SECONDS.
 getReadings();
