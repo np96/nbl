@@ -10,6 +10,7 @@ function processResponse(response) {
      server.log("Code: " + response.statuscode + ". Message: " + response.body);
 }
 
+
 // Handles led setting request
 function ledHandler(request, response) {
     server.log("Handling request");
@@ -27,7 +28,7 @@ http.onrequest(ledHandler);
 
 // Post reading from the device to thething.io.
 function postReading(reading) {
-    reading = http.jsonencode(reading);
+    reading = http.jsonencode({"values" : [reading]});
     server.log("sending readings: " + reading);
     local req = http.post(API_URL, THE_THINGS_HEADER, reading);
     req.sendasync(processResponse);

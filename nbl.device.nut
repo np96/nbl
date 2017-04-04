@@ -14,60 +14,32 @@ pressureSensor.enable(true);
 local led = hardware.pin2;
 led.configure(DIGITAL_OUT, 1);
 
-
-// Data structure for sensors. Each sensors array member is
-// an object representing device and needed readings for it.
-local sensors = [
-    {
-        "device": tempHumidSensor,
-        "readings": ["temperature", "humidity"]
-    },
-    {
-        "device": pressureSensor,
-        "readings": ["pressure"]
+// Iterate readings and send each value
+function sendReading(data) {
+    if ("err" in data) {
+        server.error("Error reading" + "\n" + data.err);
+        return;
     }
-];
-
-// Function factory returning callback executed each time 
-// readings are taken. readingNames is the list of units
-// we are interested in.
-function sendReadingFactory(readingNames) {
-    return function (data) {
-        // Don't send anything if an error occured.
-        if ("err" in data) {
-            server.log("Error reading " + "\n" + reading.err);
-            return;
-        }
-        // Make temporary object holding needed data and send
-        // it to agent.
-        local readingsToSend = {"values": []}
-        foreach (readingName in readingNames) {
-            readingsToSend.values.append(
-                {
-                    "key": readingName,
-                    "value": data[readingName]
-                });
-        }
-        agent.send("reading", readingsToSend);
+    foreach(readingKey, readingValue in data) {
+        agent.send("reading", {"key" : readingKey
+                               "value": readingValue
+                              });
     }
 }
 
 // Collect readings for observed devices and units.
 function getReadings() {
-    // Iterate through the array of sensors, 
-    // collect readings for each observed unit.
-    foreach (sensor in sensors) {
-        local readingNames = sensor["readings"];
-        sensor["device"].read(sendReadingFactory(readingNames));
-    }
+    tempHumidSensor.read(sendReading);
+    pressureSensor.read(sendReading);
     imp.wakeup(INTERVAL_SECONDS, getReadings);
 }
-
 
 function setLed(data) {
     if (data == 0 || data == 1) {
         server.log("led set to " + data);
         led.write(data);
+    } else {
+        server.error("Tried to set incorrect led value: " + data);
     }
 }
 
@@ -77,7 +49,7 @@ local ledValue = {
     "value": 1 
 };
 
-agent.send("reading", {"values": [ledValue]});
+agent.send("led", ledValue);
 
 agent.on("setled", setLed);
 // Take a temperature reading as soon as the device starts up.
