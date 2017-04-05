@@ -33,5 +33,5 @@ function postReading(reading) {
     local req = http.post(API_URL, THE_THINGS_HEADER, reading);
     req.sendasync(processResponse);
 }
-
+device.on("led", postReading);
 device.on("reading", postReading);
