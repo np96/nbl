@@ -50,7 +50,6 @@ local ledValue = {
 };
 
 agent.send("led", ledValue);
-
 agent.on("setled", setLed);
 // Take a temperature reading as soon as the device starts up.
 // This function schedules itself to run again in INTERVAL_SECONDS.
